@@ -1,33 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SevaLink Home Care — Web Frontend
 
-## Getting Started
+> **Subdomain:** `homecare.sevalinkcare.com`
+> **Parent site:** `www.sevalinkcare.com`
 
-First, run the development server:
+Professional home care booking platform — nursing, elder care, doctor home visits & post-surgery support in Rajkot, Gujarat.
+
+## Tech Stack
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Next.js | 14.2 (App Router) | Framework |
+| React | 18.3 | UI |
+| TypeScript | 5.x | Type safety |
+| Tailwind CSS | 4.x | Styling |
+| Framer Motion | 12.x | Animations |
+| Lucide React | 1.x | Icons |
+| Radix UI | 1.4 | Sheet/dialog primitives |
+| Geist | 1.x | Mono font |
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Production build
+npm run build
+
+# Start production server
+npm start
+
+# Lint
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env` and configure:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_SITE_URL=https://homecare.sevalinkcare.com
+NEXT_PUBLIC_MAIN_SITE_URL=https://www.sevalinkcare.com
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── globals.css          # Design tokens, utilities, animations
+│   ├── layout.tsx           # Root layout (fonts, SEO, JSON-LD)
+│   └── page.tsx             # Home page
+├── components/
+│   ├── home/
+│   │   └── HeroSearch.tsx   # Hero section with service search
+│   ├── layout/
+│   │   ├── Header.tsx       # Fixed header with nav + mobile menu
+│   │   └── Footer.tsx       # Footer with emerald gradient
+│   └── ui/
+│       ├── sheet.tsx         # Radix Sheet primitive
+│       └── medical-background.tsx  # Floating medical icons
+└── lib/
+    └── utils.ts             # cn() utility
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design System
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Accent color:** Emerald (`bg-emerald-600`) — replaces red from the landing page
+- **Fonts:** Inter (body/headings) + Geist Mono (code/data)
+- **Color tokens:** oklch values matching the landing page (see `globals.css`)
+
+## Documentation
+
+See [`docs/`](docs/) for:
+- [Developer Onboarding Guide](docs/developer-guide.md)
+- [Homecare Subdomain Guide](docs/homecare-subdomain-guide.md)
 
 ## Deploy on Vercel
 

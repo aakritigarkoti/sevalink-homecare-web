@@ -1,0 +1,5 @@
+# SevaLink robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://www.sevalink.in/sitemap.xml
