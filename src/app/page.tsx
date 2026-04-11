@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="pt-14 sm:pt-18 md:pt-16">
+      <main>
         <HeroSearch />
       </main>
       <Footer />

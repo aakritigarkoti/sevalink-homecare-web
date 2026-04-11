@@ -14,18 +14,23 @@ import {
 } from "@/components/ui/sheet";
 
 const MAIN_SITE_URL = process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? "https://www.sevalinkcare.com";
+const EXTERNAL_BOOKING_URL = "https://book.sevalinkcare.com";
 
 const navLinks = [
   { label: "Nurse at Home", href: "/nurse-at-home" },
   { label: "Elder Care", href: "/elder-care" },
   { label: "Doctor Visit", href: "/doctor-visit" },
-  { label: "Post-Surgery", href: "/post-surgery-care" },
+  { label: "Post-Surgery", href: "/post-surgery" },
 ];
 
 export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  const handleBookNowClick = () => {
+    window.location.href = EXTERNAL_BOOKING_URL;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -108,14 +113,17 @@ export const Header = () => {
                       </a>
 
                       <div className="mt-6 pt-6 border-t border-gray-200 flex flex-col gap-3">
-                        <Link
-                          href="/book"
+                        <button
+                          type="button"
                           className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-emerald-600 !text-white visited:!text-white hover:!text-white active:!text-white text-base font-semibold hover:bg-emerald-700 hover:shadow-lg transition-all text-center cursor-pointer border-none"
-                          onClick={() => setMobileOpen(false)}
+                          onClick={() => {
+                            setMobileOpen(false);
+                            handleBookNowClick();
+                          }}
                         >
                           <HousePlus className="w-5 h-5" />
                           Book Home Care
-                        </Link>
+                        </button>
                       </div>
                     </nav>
                   </div>
@@ -148,13 +156,14 @@ export const Header = () => {
 
           {/* CTA - Desktop */}
           <div className="hidden md:flex items-center gap-2 md:shrink-0 pr-2">
-            <Link
-              href="/book"
+            <button
+              type="button"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 !text-white visited:!text-white hover:!text-white active:!text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer border-none"
+              onClick={handleBookNowClick}
             >
               <HousePlus className="w-4 h-4" />
               Book Home Care
-            </Link>
+            </button>
           </div>
         </div>
       </div>
