@@ -18,6 +18,7 @@ type AgencyDetailPageProps = {
   };
   searchParams?: {
     service?: string;
+    location?: string;
   };
 };
 

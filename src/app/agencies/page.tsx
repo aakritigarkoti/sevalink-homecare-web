@@ -15,6 +15,8 @@ import {
 } from '@/lib/home-care-search-data';
 import { resolveServiceImage } from '@/lib/service-images';
 
+const supportedCities = ['Rajkot', 'Ahmedabad', 'Vadodara', 'Surat'];
+
 export default function AgenciesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,8 +31,6 @@ export default function AgenciesPage() {
   const [locationStatus, setLocationStatus] = useState('');
   const [isUnsupportedLocation, setIsUnsupportedLocation] = useState(false);
   const [isUsingDemoProviders, setIsUsingDemoProviders] = useState(false);
-
-  const supportedCities = ['Rajkot', 'Ahmedabad', 'Vadodara', 'Surat'];
 
   const serviceMatchedAgencies = normalizedService
     ? filterAgenciesByService(resolvedServiceId)

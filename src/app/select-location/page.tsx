@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { CircleMarker, LeafletMouseEvent, Map as LeafletMap } from 'leaflet';
 
 import Footer from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
@@ -63,9 +64,9 @@ export default function SelectLocationPage() {
   const [selectedCoords, setSelectedCoords] = useState<SelectedCoords | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const leafletRef = useRef<any>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<CircleMarker | null>(null);
+  const leafletRef = useRef<typeof import('leaflet') | null>(null);
   const reverseGeoAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -148,7 +149,7 @@ export default function SelectLocationPage() {
           })
           .addTo(mapRef.current);
 
-        mapRef.current.on('click', (event: any) => {
+        mapRef.current.on('click', (event: LeafletMouseEvent) => {
           setSelectedCoords({ lat: event.latlng.lat, lng: event.latlng.lng });
           setMapStatus('Pin moved. Confirm this location to continue.');
         });

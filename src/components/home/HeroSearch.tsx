@@ -2,35 +2,25 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
+  Activity,
   Brain,
-  ClipboardList,
   Check,
+  ClipboardList,
   HeartPulse,
   MapPin,
   Search,
   Stethoscope,
   UserRound,
-  Activity,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-import {
-  normalizeSearchTerm,
-  resolveServiceId,
-} from '@/lib/home-care-search-data';
+import { normalizeSearchTerm, resolveServiceId } from '@/lib/home-care-search-data';
 import { resolveServiceImage } from '@/lib/service-images';
 
 const locations = ['Rajkot', 'Ahmedabad', 'Surat', 'Vadodara'];
-
-const popularSearches = [
-  'Nurse',
-  'Elder Care',
-  'Doctor Visit',
-  'Post-Surgery',
-];
-
+const popularSearches = ['Nurse', 'Elder Care', 'Doctor Visit', 'Post-Surgery'];
 const suggestions = [
   'Nurse',
   'Elder Care',
@@ -113,7 +103,6 @@ export function HeroSearch() {
   const [highlightedService, setHighlightedService] = useState('');
 
   const homeCareServicesRef = useRef<HTMLElement | null>(null);
-
   const normalizedSearchQuery = normalizeSearchTerm(searchQuery);
 
   const filteredSuggestions = suggestions.filter((item) =>
@@ -122,17 +111,17 @@ export function HeroSearch() {
 
   const handleSelect = (value: string, location?: string) => {
     const normalizedValue = normalizeSearchTerm(value);
-    const resolvedServiceId = resolveServiceId(normalizedValue);
-
-    const serviceParam = resolvedServiceId || normalizedValue;
+    const resolvedId = resolveServiceId(normalizedValue);
+    const serviceParam = resolvedId || normalizedValue;
     const locationParam = location ? `&location=${encodeURIComponent(location)}` : '';
+
     router.push(`/agencies?service=${encodeURIComponent(serviceParam)}${locationParam}`);
   };
 
   const handleCardLocationFlow = (value: string) => {
     const normalizedValue = normalizeSearchTerm(value);
-    const resolvedServiceId = resolveServiceId(normalizedValue);
-    const serviceParam = resolvedServiceId || normalizedValue;
+    const resolvedId = resolveServiceId(normalizedValue);
+    const serviceParam = resolvedId || normalizedValue;
 
     router.push(`/select-location?service=${encodeURIComponent(serviceParam)}`);
   };
@@ -151,10 +140,6 @@ export function HeroSearch() {
     handleCardLocationFlow(label);
   };
 
-  const handleHomeCareCategoryClick = (serviceId: string) => {
-    router.push(`/select-location?service=${encodeURIComponent(serviceId)}`);
-  };
-
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion);
     handleSelect(suggestion, selectedLocation);
@@ -165,10 +150,7 @@ export function HeroSearch() {
       return;
     }
 
-    homeCareServicesRef.current.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
+    homeCareServicesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleServicePickerSelect = (serviceTitle: string) => {
@@ -194,9 +176,7 @@ export function HeroSearch() {
   return (
     <section
       className="bg-gradient-to-b px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
-      style={{
-        background: 'linear-gradient(to bottom, rgba(182,219,201,0.28), #ffffff)',
-      }}
+      style={{ background: 'linear-gradient(to bottom, rgba(182,219,201,0.28), #ffffff)' }}
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center">
         <div className="max-w-3xl text-center">
@@ -298,9 +278,7 @@ export function HeroSearch() {
         <section ref={homeCareServicesRef} className="w-full py-16" id="home-care-services">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                Home Care Services
-              </h2>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Home Care Services</h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
@@ -308,9 +286,7 @@ export function HeroSearch() {
                 <article
                   key={title}
                   className={`group overflow-hidden rounded-[20px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)] ${
-                    highlightedService === title
-                      ? 'ring-2 ring-emerald-500 ring-offset-2'
-                      : ''
+                    highlightedService === title ? 'ring-2 ring-emerald-500 ring-offset-2' : ''
                   }`}
                 >
                   <div className="relative h-[180px] w-full overflow-hidden">
@@ -379,9 +355,7 @@ export function HeroSearch() {
                 </button>
               </div>
 
-              <p className="mt-2 text-sm text-gray-600">
-                Choose a service and we will scroll to Home Care Services.
-              </p>
+              <p className="mt-2 text-sm text-gray-600">Choose a service and we will scroll to Home Care Services.</p>
 
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {homeCareCategories.map(({ title }) => (
