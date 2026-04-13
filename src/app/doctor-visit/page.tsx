@@ -39,7 +39,7 @@ export default function DoctorVisitPage() {
               </ul>
 
               <Link
-                href="/book/doctor-visit"
+                href="/select-location?service=doctor-visit"
                 className="mt-8 inline-flex rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold !text-white visited:!text-white hover:!text-white active:!text-white shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-emerald-700 hover:shadow-lg"
               >
                 Book Now
@@ -84,7 +84,7 @@ export default function DoctorVisitPage() {
         <section className="px-4 py-10 sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-6xl justify-center">
             <Link
-              href="/book/doctor-visit"
+              href="/select-location?service=doctor-visit"
               className="inline-flex rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold !text-white visited:!text-white hover:!text-white active:!text-white shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-emerald-700 hover:shadow-lg"
             >
               Book Doctor Visit

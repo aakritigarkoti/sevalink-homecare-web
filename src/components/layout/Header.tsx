@@ -29,6 +29,11 @@ export const Header = () => {
   const pathname = usePathname();
 
   const handleBookNowClick = () => {
+    if (pathname === "/") {
+      window.dispatchEvent(new CustomEvent("open-homecare-service-picker"));
+      return;
+    }
+
     window.location.href = EXTERNAL_BOOKING_URL;
   };
 

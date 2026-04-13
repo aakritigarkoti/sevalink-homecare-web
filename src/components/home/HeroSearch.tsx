@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import {
   Brain,
   ClipboardList,
+  Check,
   HeartPulse,
   MapPin,
   Search,
@@ -12,26 +14,31 @@ import {
   Activity,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+import {
+  normalizeSearchTerm,
+  resolveServiceId,
+} from '@/lib/home-care-search-data';
+import { resolveServiceImage } from '@/lib/service-images';
 
 const locations = ['Rajkot', 'Ahmedabad', 'Surat', 'Vadodara'];
 
 const popularSearches = [
-  'Nurse at Home',
+  'Nurse',
   'Elder Care',
   'Doctor Visit',
-  'Post-Surgery Care',
+  'Post-Surgery',
 ];
 
 const suggestions = [
-  'Nurse at Home',
-  'Nursing Care',
-  'ICU Nurse',
-  'Home Nurse Booking',
+  'Nurse',
   'Elder Care',
-  'Senior Care',
-  'Home Assistance',
   'Doctor Visit',
-  'Post-Surgery Care',
+  'Post-Surgery',
+  'Physiotherapy',
+  'Diabetes Care',
+  'Mental Health',
 ];
 
 const categoryShortcuts = [
@@ -43,33 +50,57 @@ const categoryShortcuts = [
 
 const homeCareCategories = [
   {
+    serviceId: 'nurse',
+    detailsHref: '/nurse-at-home',
     title: 'Nursing Care',
     description: 'Skilled in-home nursing support for daily medical needs.',
+    features: ['Home nursing', 'ICU support', 'Elder care'],
+    cta: 'BOOK NOW',
     Icon: Stethoscope,
   },
   {
+    serviceId: 'physiotherapy',
+    detailsHref: '/physiotherapy',
     title: 'Physiotherapy',
     description: 'Personalized rehabilitation and mobility recovery sessions.',
+    features: ['Pain relief', 'Mobility rehab', 'Post-injury support'],
+    cta: 'BOOK NOW',
     Icon: Activity,
   },
   {
+    serviceId: 'diabetes-care',
+    detailsHref: '/diabetes-care',
     title: 'Diabetes Management',
     description: 'Guidance, monitoring, and routine care for better control.',
+    features: ['Sugar monitoring', 'Diet guidance', 'Routine follow-up'],
+    cta: 'BOOK NOW',
     Icon: ClipboardList,
   },
   {
+    serviceId: 'post-surgery',
+    detailsHref: '/post-surgery',
     title: 'Post-Operative Care',
     description: 'Safe recovery support after surgery and hospital discharge.',
+    features: ['Wound care', 'Recovery checks', 'Home support'],
+    cta: 'BOOK NOW',
     Icon: HeartPulse,
   },
   {
+    serviceId: 'mental-health',
+    detailsHref: '/mental-health',
     title: 'Mental Health Support',
     description: 'Compassionate emotional care and therapy-led assistance.',
+    features: ['Counseling care', 'Stress support', 'Wellness follow-up'],
+    cta: 'BOOK NOW',
     Icon: Brain,
   },
   {
+    serviceId: 'elder-care',
+    detailsHref: '/elder-care',
     title: 'Elder Care',
     description: 'Respectful, dependable assistance for older adults at home.',
+    features: ['Daily support', 'Companion care', 'Assisted mobility'],
+    cta: 'BOOK NOW',
     Icon: UserRound,
   },
 ];
@@ -78,71 +109,87 @@ export function HeroSearch() {
   const router = useRouter();
   const [selectedLocation, setSelectedLocation] = useState('Rajkot');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isServicePickerOpen, setIsServicePickerOpen] = useState(false);
+  const [highlightedService, setHighlightedService] = useState('');
+
+  const homeCareServicesRef = useRef<HTMLElement | null>(null);
+
+  const normalizedSearchQuery = normalizeSearchTerm(searchQuery);
 
   const filteredSuggestions = suggestions.filter((item) =>
-    item.toLowerCase().includes(searchQuery.toLowerCase()),
+    normalizeSearchTerm(item).includes(normalizedSearchQuery),
   );
 
-  const resolveServiceRoute = (value: string) => {
-    const v = value.toLowerCase();
+  const handleSelect = (value: string, location?: string) => {
+    const normalizedValue = normalizeSearchTerm(value);
+    const resolvedServiceId = resolveServiceId(normalizedValue);
 
-    if (v.includes('nurs')) {
-      return '/nurse-at-home';
-    }
-
-    if (v.includes('physio')) {
-      return '/physiotherapy';
-    }
-
-    if (v.includes('diab')) {
-      return '/diabetes-care';
-    }
-
-    if (v.includes('mental')) {
-      return '/mental-health';
-    }
-
-    if (v.includes('elder')) {
-      return '/elder-care';
-    }
-
-    if (v.includes('doctor')) {
-      return '/doctor-visit';
-    }
-
-    if (v.includes('post')) {
-      return '/post-surgery';
-    }
-
-    return '/nurse-at-home';
+    const serviceParam = resolvedServiceId || normalizedValue;
+    const locationParam = location ? `&location=${encodeURIComponent(location)}` : '';
+    router.push(`/agencies?service=${encodeURIComponent(serviceParam)}${locationParam}`);
   };
 
-  const handleSelect = (value: string) => {
-    router.push(resolveServiceRoute(value));
+  const handleCardLocationFlow = (value: string) => {
+    const normalizedValue = normalizeSearchTerm(value);
+    const resolvedServiceId = resolveServiceId(normalizedValue);
+    const serviceParam = resolvedServiceId || normalizedValue;
+
+    router.push(`/select-location?service=${encodeURIComponent(serviceParam)}`);
   };
 
   const handleSearch = () => {
-    const trimmedQuery = searchQuery.trim();
+    const trimmedQuery = normalizeSearchTerm(searchQuery);
 
     if (!trimmedQuery) {
       return;
     }
 
-    handleSelect(trimmedQuery);
+    handleSelect(trimmedQuery, selectedLocation);
   };
 
-  const handleCategoryClick = (href: string) => {
-    router.push(href);
+  const handleCategoryClick = (label: string) => {
+    handleCardLocationFlow(label);
   };
 
-  const handleHomeCareCategoryClick = (category: string) => {
-    router.push(resolveServiceRoute(category));
+  const handleHomeCareCategoryClick = (serviceId: string) => {
+    router.push(`/select-location?service=${encodeURIComponent(serviceId)}`);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion);
-    handleSelect(suggestion);
+    handleSelect(suggestion, selectedLocation);
   };
+
+  const scrollToServicesSection = () => {
+    if (!homeCareServicesRef.current) {
+      return;
+    }
+
+    homeCareServicesRef.current.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  const handleServicePickerSelect = (serviceTitle: string) => {
+    setIsServicePickerOpen(false);
+    setHighlightedService(serviceTitle);
+    window.setTimeout(() => {
+      scrollToServicesSection();
+    }, 120);
+  };
+
+  useEffect(() => {
+    const handleOpenServicePicker = () => {
+      setIsServicePickerOpen(true);
+    };
+
+    window.addEventListener('open-homecare-service-picker', handleOpenServicePicker);
+
+    return () => {
+      window.removeEventListener('open-homecare-service-picker', handleOpenServicePicker);
+    };
+  }, []);
 
   return (
     <section
@@ -240,7 +287,7 @@ export function HeroSearch() {
             <button
               key={category.href}
               type="button"
-              onClick={() => handleCategoryClick(category.href)}
+              onClick={() => handleCategoryClick(category.label)}
               className="rounded-2xl bg-white p-4 text-center text-sm font-semibold text-gray-900 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
               {category.label}
@@ -248,7 +295,7 @@ export function HeroSearch() {
           ))}
         </div>
 
-        <section className="w-full py-16">
+        <section ref={homeCareServicesRef} className="w-full py-16" id="home-care-services">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center">
               <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
@@ -257,25 +304,100 @@ export function HeroSearch() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
-              {homeCareCategories.map(({ title, description, Icon }) => (
-                <button
+              {homeCareCategories.map(({ serviceId, detailsHref, title, description, features, cta, Icon }) => (
+                <article
                   key={title}
-                  type="button"
-                  onClick={() => handleHomeCareCategoryClick(title)}
-                  className="group flex min-h-[170px] cursor-pointer flex-col rounded-2xl bg-white p-4 text-left shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 sm:min-h-[200px] sm:p-6"
+                  className={`group overflow-hidden rounded-[20px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)] ${
+                    highlightedService === title
+                      ? 'ring-2 ring-emerald-500 ring-offset-2'
+                      : ''
+                  }`}
                 >
-                  <Icon className="h-7 w-7 text-emerald-600 transition-transform duration-200 group-hover:scale-110 sm:h-8 sm:w-8" />
-                  <h3 className="mt-3 text-base font-semibold leading-snug text-gray-900 sm:mt-4 sm:text-lg">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-gray-500 sm:text-sm">
-                    {description}
-                  </p>
-                </button>
+                  <div className="relative h-[180px] w-full overflow-hidden">
+                    <Image
+                      src={resolveServiceImage(title)}
+                      alt={title}
+                      width={900}
+                      height={540}
+                      quality={100}
+                      className="h-full w-full object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                    <div className="absolute bottom-4 left-4 flex items-end gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-emerald-700">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="text-lg font-bold text-white">{title}</h3>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 p-4">
+                    <ul className="space-y-1.5 text-sm text-gray-600">
+                      {features.map((feature) => (
+                        <li key={`${title}-${feature}`} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-emerald-600" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <p className="text-xs leading-relaxed text-gray-500">{description}</p>
+
+                    <Link
+                      href={`/select-location?service=${encodeURIComponent(serviceId)}`}
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold tracking-wide !text-white visited:!text-white hover:!text-white active:!text-white transition hover:bg-emerald-700"
+                    >
+                      {cta}
+                    </Link>
+
+                    <Link
+                      href={detailsHref}
+                      className="inline-flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold tracking-wide text-gray-700 transition hover:bg-gray-50"
+                    >
+                      MORE DETAILS
+                    </Link>
+                  </div>
+                </article>
               ))}
             </div>
           </div>
         </section>
+
+        {isServicePickerOpen ? (
+          <section className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+            <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Select Service</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsServicePickerOpen(false)}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700"
+                >
+                  Close
+                </button>
+              </div>
+
+              <p className="mt-2 text-sm text-gray-600">
+                Choose a service and we will scroll to Home Care Services.
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {homeCareCategories.map(({ title }) => (
+                  <button
+                    key={`service-picker-${title}`}
+                    type="button"
+                    onClick={() => handleServicePickerSelect(title)}
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm font-medium text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                  >
+                    {title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
       </div>
     </section>
   );

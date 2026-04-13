@@ -29,6 +29,7 @@ type LocationAutocompleteProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
 };
 
 export function LocationAutocomplete({
@@ -38,6 +39,7 @@ export function LocationAutocomplete({
   onChange,
   placeholder = 'Enter your location',
   required = false,
+  disabled = false,
 }: LocationAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -66,10 +68,20 @@ export function LocationAutocomplete({
         type="text"
         value={value}
         onChange={(event) => {
+          if (disabled) {
+            return;
+          }
+
           onChange(event.target.value);
           setIsOpen(true);
         }}
-        onFocus={() => setIsOpen(true)}
+        onFocus={() => {
+          if (disabled) {
+            return;
+          }
+
+          setIsOpen(true);
+        }}
         onBlur={() => {
           window.setTimeout(() => setIsOpen(false), 120);
         }}
@@ -77,6 +89,7 @@ export function LocationAutocomplete({
         placeholder={placeholder}
         autoComplete="off"
         required={required}
+        disabled={disabled}
       />
 
       {isOpen && suggestions.length > 0 ? (

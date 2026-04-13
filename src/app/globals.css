@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -164,4 +165,63 @@ a {
   animation: floatUp linear infinite;
   color: #059669; /* emerald-600 */
   opacity: 0.15;
+}
+
+/* Leaflet fallback styles for consistent modal map rendering */
+.location-map,
+.location-map .leaflet-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.location-map .leaflet-pane,
+.location-map .leaflet-tile,
+.location-map .leaflet-marker-icon,
+.location-map .leaflet-marker-shadow,
+.location-map .leaflet-tile-container,
+.location-map .leaflet-pane > svg,
+.location-map .leaflet-pane > canvas,
+.location-map .leaflet-zoom-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.location-map .leaflet-tile,
+.location-map .leaflet-marker-icon,
+.location-map .leaflet-marker-shadow {
+  max-width: none;
+}
+
+.location-map .leaflet-pane {
+  z-index: 400;
+}
+
+.location-map .leaflet-tile-pane {
+  z-index: 200;
+}
+
+.location-map .leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.location-map .leaflet-marker-pane {
+  z-index: 600;
+}
+
+.location-map .leaflet-tooltip-pane {
+  z-index: 650;
+}
+
+.location-map .leaflet-popup-pane {
+  z-index: 700;
+}
+
+.location-map .leaflet-map-pane,
+.location-map .leaflet-tile-pane,
+.location-map .leaflet-marker-pane,
+.location-map .leaflet-overlay-pane,
+.location-map .leaflet-shadow-pane,
+.location-map .leaflet-popup-pane {
+  transform: translate3d(0, 0, 0);
 }
