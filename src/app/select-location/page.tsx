@@ -66,6 +66,14 @@ export default function SelectLocationPage() {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
+  const reverseGeoAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      reverseGeoAbortRef.current?.abort();
+      reverseGeoAbortRef.current = null;
+    };
+  }, []);
 
   const goToAgencies = (location: string) => {
     router.push(
@@ -222,20 +230,41 @@ export default function SelectLocationPage() {
   }, []);
 
   const reverseGeocodeCity = async (coords: SelectedCoords) => {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`,
-    );
+    reverseGeoAbortRef.current?.abort();
+    reverseGeoAbortRef.current = new AbortController();
 
-    if (!response.ok) {
-      throw new Error('Unable to resolve city for coordinates.');
+    const timeoutId = window.setTimeout(() => {
+      reverseGeoAbortRef.current?.abort();
+    }, 6000);
+
+    const startedAt = Date.now();
+
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(coords.lat)}&lng=${encodeURIComponent(coords.lng)}`,
+        {
+          signal: reverseGeoAbortRef.current.signal,
+          cache: 'no-store',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Unable to resolve city for coordinates.');
+      }
+
+      const data = await response.json();
+
+      console.log('[select-location] reverse geocode timing', {
+        durationMs: Date.now() - startedAt,
+        lat: coords.lat,
+        lng: coords.lng,
+      });
+
+      reverseGeoAbortRef.current = null;
+      return data.city as string;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-
-    const data = await response.json();
-    const address = data.address ?? {};
-    const detectedCityName =
-      address.city ?? address.town ?? address.village ?? address.state_district ?? address.county ?? '';
-
-    return detectedCityName as string;
   };
 
   const handleConfirmMapLocation = async () => {
