@@ -17,7 +17,7 @@ export interface CreateBookingPayload {
 export interface BookingResponse {
   success: boolean;
   message: string;
-  booking?: any;
+  booking?: Record<string, unknown>;
 }
 
 export async function createBooking(payload: CreateBookingPayload): Promise<BookingResponse> {
