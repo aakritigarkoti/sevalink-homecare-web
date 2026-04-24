@@ -14,6 +14,8 @@ import {
   resolveServiceId,
 } from '@/lib/home-care-search-data';
 import { resolveServiceImage } from '@/lib/service-images';
+import { sendOtp as sendOtpApi, verifyOtp as verifyOtpApi } from '@/lib/otp-auth';
+import { createBooking, discoverProviders, searchServices } from '@/lib/booking-api';
 
 type BookingFormData = {
   fullName: string;
@@ -48,6 +50,8 @@ export default function BookPage() {
   const [otpStatus, setOtpStatus] = useState('');
   const [otpError, setOtpError] = useState('');
   const [formError, setFormError] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const subServiceOptions = getSubServiceOptionsForPrimary(lockedServiceId);
 
@@ -86,7 +90,7 @@ export default function BookPage() {
     }));
   }, [searchParams]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError('');
 
@@ -125,38 +129,105 @@ export default function BookPage() {
       return;
     }
 
-    const bookingId = `BK-${Date.now()}`;
-    const successParams = new URLSearchParams({
-      bookingId,
-      name: formData.fullName,
-      phone: formData.phoneNumber,
-      service: formData.primaryService,
-      subService: formData.subServiceType,
-      agency: agencyId || 'Not Specified',
-      date: formData.date,
-      time: formData.time,
-      location: formData.location,
-    });
+    setIsSubmitting(true);
 
-    router.push(`/booking-success?${successParams.toString()}`);
+    try {
+      const services = await searchServices(formData.subServiceType);
+      if (!services || services.length === 0) {
+        setFormError('Selected service is not currently available in the system.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const serviceId = services[0].id;
+      
+      // Use default coords for demo purposes
+      const lat = 22.3039;
+      const lng = 70.8022;
+
+      const providers = await discoverProviders(lat, lng, serviceId);
+      if (!providers || providers.length === 0) {
+        setFormError('No providers available for this service in your area.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const providerId = providers[0].id;
+
+      const bookingRes = await createBooking({
+        providerId,
+        serviceId,
+        scheduledDate: formData.date,
+        scheduledTime: formData.time,
+        durationHours: 2, // default
+        lat,
+        lng,
+        serviceAddress: formData.location,
+        patientNotes: "Booked via Homecare Web"
+      });
+
+      if (!bookingRes.success) {
+        setFormError(bookingRes.message || 'Failed to create booking.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const bookingId = bookingRes.booking?.id || `BK-${Date.now()}`;
+      const successParams = new URLSearchParams({
+        bookingId,
+        name: formData.fullName,
+        phone: formData.phoneNumber,
+        service: formData.primaryService,
+        subService: formData.subServiceType,
+        agency: agencyId || 'Not Specified',
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+      });
+
+      router.push(`/booking-success?${successParams.toString()}`);
+    } catch (e) {
+      console.error(e);
+      setFormError('An unexpected error occurred. Please try again later.');
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!formData.phoneNumber.trim()) {
       setOtpError('Enter phone number first');
       setOtpStatus('');
       return;
     }
 
-    setIsOtpSent(true);
-    setIsVerified(false);
-    setOtp('');
+    setIsSendingOtp(true);
     setOtpError('');
-    setOtpStatus('OTP sent');
+    setOtpStatus('');
+
+    try {
+      const response = await sendOtpApi(formData.phoneNumber);
+
+      if (response.success) {
+        setIsOtpSent(true);
+        setIsVerified(false);
+        setOtp('');
+        setOtpStatus('OTP sent to your phone');
+      } else {
+        setOtpError(response.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setOtpError('Failed to send OTP. Please try again.');
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
   const handleVerifyOtp = async () => {
-    if (!isOtpSent) {
+    if (!isOtpSent) return;
+
+    if (!otp.trim() || otp.trim().length !== 6) {
+      setOtpError('Please enter the 6-digit OTP');
       return;
     }
 
@@ -164,19 +235,26 @@ export default function BookPage() {
     setOtpError('');
     setOtpStatus('');
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      const response = await verifyOtpApi(formData.phoneNumber, otp.trim());
 
-    if (otp.trim() === '123456') {
-      setIsVerified(true);
-      setOtpStatus('Phone number verified');
-      setOtpError('');
-    } else {
+      if (response.success) {
+        setIsVerified(true);
+        setOtpStatus('Phone number verified successfully');
+        setOtpError('');
+      } else {
+        setIsVerified(false);
+        setOtpError(response.message || 'Invalid OTP');
+        setOtpStatus('');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
       setIsVerified(false);
-      setOtpError('Invalid OTP');
+      setOtpError('Failed to verify OTP. Please try again.');
       setOtpStatus('');
+    } finally {
+      setIsOtpVerifying(false);
     }
-
-    setIsOtpVerifying(false);
   };
 
   return (
@@ -257,34 +335,36 @@ export default function BookPage() {
                 <button
                   type="button"
                   onClick={handleSendOtp}
-                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                  disabled={isSendingOtp || isVerified}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Verify OTP
+                  {isSendingOtp ? 'Sending...' : isVerified ? '✓ Verified' : isOtpSent ? 'Resend OTP' : 'Send OTP'}
                 </button>
                 {otpStatus ? <span className="text-xs text-emerald-700">{otpStatus}</span> : null}
               </div>
 
               {isOtpSent && !isVerified ? (
                 <div className="mt-2 space-y-2">
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-                    Demo OTP: 123456
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
+                    A 6-digit OTP has been sent to your phone
                   </div>
 
                   <input
                     id="otp"
                     type="text"
                     value={otp}
-                    onChange={(event) => setOtp(event.target.value.slice(0, 6))}
+                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-emerald-500"
                     placeholder="Enter 6-digit OTP"
                     inputMode="numeric"
                     maxLength={6}
+                    autoFocus
                   />
 
                   <button
                     type="button"
                     onClick={handleVerifyOtp}
-                    disabled={isOtpVerifying}
+                    disabled={isOtpVerifying || otp.length !== 6}
                     className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isOtpVerifying ? 'Verifying...' : 'Verify OTP'}
@@ -374,10 +454,10 @@ export default function BookPage() {
 
             <button
               type="submit"
-              disabled={!isVerified}
+              disabled={!isVerified || isSubmitting}
               className="w-full rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Confirm Booking
+              {isSubmitting ? 'Booking...' : 'Confirm Booking'}
             </button>
           </form>
         </section>
