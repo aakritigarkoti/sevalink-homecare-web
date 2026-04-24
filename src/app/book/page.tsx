@@ -172,7 +172,7 @@ export default function BookPage() {
         return;
       }
 
-      const bookingId = bookingRes.booking?.id || `BK-${Date.now()}`;
+      const bookingId = (bookingRes.booking?.id as string) || `BK-${Date.now()}`;
       const successParams = new URLSearchParams({
         bookingId,
         name: formData.fullName,
