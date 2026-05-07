@@ -14,6 +14,7 @@ import {
   resolveServiceId,
 } from '@/lib/home-care-search-data';
 import { resolveServiceImage } from '@/lib/service-images';
+import { ProviderCard } from '@/components/home/ProviderCard';
 
 const supportedCities = ['Rajkot', 'Ahmedabad', 'Vadodara', 'Surat'];
 
@@ -167,9 +168,9 @@ export default function AgenciesPage() {
           <div className="mx-auto max-w-6xl">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                {agenciesList.length} agencies available in {locationLabel}
+                {agenciesList.length} providers available in {locationLabel}
               </h1>
-              <p className="mt-2 text-sm text-gray-600 sm:text-base">Book services with verified agencies</p>
+              <p className="mt-2 text-sm text-gray-600 sm:text-base">Book services with verified care professionals</p>
               {locationStatus ? <p className="mt-2 text-sm text-emerald-700">{locationStatus}</p> : null}
               {isUsingDemoProviders ? (
                 <p className="mt-2 inline-flex rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
@@ -180,109 +181,47 @@ export default function AgenciesPage() {
 
             <div className="grid gap-6 lg:grid-cols-[7fr_3fr]">
               <div className="space-y-4">
-                {agenciesList.map((agency) => {
-                  const otherServices = agency.services.filter((serviceId) => serviceId !== resolvedServiceId);
+                {agenciesList.map((agency, index) => {
                   const cardServiceId = resolvedServiceId || agency.services[0] || 'nurse';
+                  
+                  // Requirement 1: Realistic mock names
+                  const mockNames = ["Ravi Sharma", "Anjali Verma", "Dr. Amit Singh", "Suresh Kumar", "Priya Das", "Vikram Rathore"];
+                  const providerName = mockNames[index % mockNames.length];
+
+                  // Requirement 2: Readable category labels
+                  const getReadableCategory = (id: string) => {
+                    const labels: Record<string, string> = {
+                      'nurse': 'Nurse at Home',
+                      'doctor-visit': 'Doctor Visit',
+                      'physiotherapy': 'Physiotherapy',
+                      'elder-care': 'Elder Care',
+                      'post-surgery': 'Post-Surgery Care',
+                      'diabetes-care': 'Diabetes Care',
+                      'mental-health': 'Mental Health'
+                    };
+                    return labels[id] || getServiceDisplayLabel(id);
+                  };
+
+                  // Requirement 9: Updated mock structure
+                  const providerData = {
+                    id: agency.id,
+                    name: providerName,
+                    qualification: agency.services.includes('nurse') ? 'BSc Nursing' : 
+                                   agency.services.includes('doctor-visit') ? 'MBBS, MD' : 
+                                   'Certified Professional',
+                    category: getReadableCategory(cardServiceId),
+                    experience: agency.experienceYears || 5,
+                    base_price: agency.priceFrom || 499,
+                    distance_km: (2 + (index * 0.3)).toFixed(1), // Realistic distances
+                    availability: "Available Today"
+                  };
 
                   return (
-                    <article
+                    <ProviderCard
                       key={agency.id}
-                      className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-                    >
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div className="shrink-0 rounded-[10px] border border-gray-200">
-                          <Image
-                            src={resolveServiceImage(cardServiceId)}
-                            alt={getServiceDisplayLabel(cardServiceId)}
-                            width={80}
-                            height={80}
-                            quality={100}
-                            className="h-20 w-20 object-cover rounded-[10px]"
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <h2 className="text-xl font-bold text-gray-900">{agency.name}</h2>
-
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                              {resolvedServiceId ? getServiceDisplayLabel(resolvedServiceId) : 'Home Care'}
-                            </span>
-                            {agency.rating ? (
-                              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700">
-                                {agency.rating.toFixed(1)} rating
-                              </span>
-                            ) : null}
-                            {agency.experienceYears ? (
-                              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700">
-                                {agency.experienceYears}+ yrs exp
-                              </span>
-                            ) : null}
-                            {agency.availability ? (
-                              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
-                                {agency.availability}
-                              </span>
-                            ) : null}
-                          </div>
-
-                          <p className="mt-3 text-sm text-gray-600">{agency.description}</p>
-                          <p className="mt-2 text-sm text-gray-700">{agency.address}</p>
-                          <p className="mt-1 text-sm text-gray-700">{agency.location}</p>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">Other services:</span>
-                            {otherServices.length > 0 ? (
-                              otherServices.map((serviceId) => (
-                                <span
-                                  key={`${agency.id}-${serviceId}`}
-                                  className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600"
-                                >
-                                  {getServiceDisplayLabel(serviceId)}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                                No additional services
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="w-full space-y-2 md:w-auto md:min-w-[180px]">
-                          <p className="text-right text-sm font-semibold text-gray-900">
-                            {agency.priceFrom ? `Starts at Rs. ${agency.priceFrom}` : 'Contact for pricing'}
-                          </p>
-                          <button
-                            type="button"
-                            onMouseEnter={() => {
-                              const serviceParam = resolvedServiceId || 'nurse';
-                              const finalLocation = selectedLocation === 'All Locations' ? agency.location : selectedLocation;
-                              router.prefetch(
-                                `/booking?service=${encodeURIComponent(serviceParam)}&location=${encodeURIComponent(finalLocation)}&agency=${encodeURIComponent(agency.id)}`,
-                              );
-                            }}
-                            onClick={() => handleBookServiceClick(agency.id, agency.location)}
-                            className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold !text-white visited:!text-white hover:!text-white active:!text-white"
-                          >
-                            Book Service
-                          </button>
-                          <button
-                            type="button"
-                            onMouseEnter={() => {
-                              const serviceParam = resolvedServiceId || 'nurse';
-                              const finalLocation = selectedLocation === 'All Locations' ? agency.location : selectedLocation;
-                              router.prefetch(
-                                `/agency/${encodeURIComponent(agency.id)}?service=${encodeURIComponent(serviceParam)}&location=${encodeURIComponent(finalLocation)}`,
-                              );
-                            }}
-                            onClick={() => handleViewDetailsClick(agency.id, agency.location)}
-                            className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700"
-                          >
-                            Contact / View Details
-                          </button>
-                        </div>
-                      </div>
-                    </article>
+                      {...providerData}
+                      onBook={(id) => handleBookServiceClick(id, agency.location)}
+                    />
                   );
                 })}
 

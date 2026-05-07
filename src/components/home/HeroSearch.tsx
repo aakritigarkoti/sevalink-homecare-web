@@ -13,11 +13,14 @@ import {
   Search,
   Stethoscope,
   UserRound,
+  Loader2,
+  Star,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { normalizeSearchTerm, resolveServiceId } from '@/lib/home-care-search-data';
 import { resolveServiceImage } from '@/lib/service-images';
+import { ProviderCard } from '@/components/home/ProviderCard';
 
 const locations = ['Rajkot', 'Ahmedabad', 'Surat', 'Vadodara'];
 const popularSearches = ['Nurse', 'Elder Care', 'Doctor Visit', 'Post-Surgery'];
@@ -101,6 +104,11 @@ export function HeroSearch() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isServicePickerOpen, setIsServicePickerOpen] = useState(false);
   const [highlightedService, setHighlightedService] = useState('');
+  
+  // New search states
+  const [providers, setProviders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const homeCareServicesRef = useRef<HTMLElement | null>(null);
   const normalizedSearchQuery = normalizeSearchTerm(searchQuery);
@@ -126,14 +134,72 @@ export function HeroSearch() {
     router.push(`/select-location?service=${encodeURIComponent(serviceParam)}`);
   };
 
-  const handleSearch = () => {
-    const trimmedQuery = normalizeSearchTerm(searchQuery);
+  const handleSearch = async (overrideQuery?: string) => {
+    const trimmedQuery = (typeof overrideQuery === 'string' ? overrideQuery : searchQuery).trim();
 
     if (!trimmedQuery) {
       return;
     }
 
-    handleSelect(trimmedQuery, selectedLocation);
+    setLoading(true);
+    setError(null);
+    setProviders([]);
+
+    // Requirement 8: Map search keywords to backend categories
+    const mapKeywordToCategory = (query: string) => {
+      const q = query.toLowerCase();
+      if (q.includes('nurse')) return 'nurse_at_home';
+      if (q.includes('elder')) return 'elder_care';
+      if (q.includes('doctor')) return 'doctor_visit';
+      if (q.includes('physio')) return 'physiotherapy';
+      return q;
+    };
+
+    const category = mapKeywordToCategory(trimmedQuery);
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+      // Requirement 1: Call the API
+      const response = await fetch('https://sevalink-backend-api.onrender.com/patients/homecare/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          category: category,
+          latitude: 22.3039,
+          longitude: 70.8022,
+          radius_km: 10
+        }),
+      });
+
+      if (response.status === 401) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Requirement 2: Update providers state
+      // Assuming the API returns an array of providers or an object with a providers array
+      const results = Array.isArray(data) ? data : (data.providers || []);
+      setProviders(results);
+    } catch (err: any) {
+      // Requirement 6: Handle errors
+      console.error('Search failed:', err);
+      if (err.message === 'UNAUTHORIZED') {
+        setError('Please login as a patient to use the search feature.');
+      } else {
+        setError('Unable to find providers. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCategoryClick = (label: string) => {
@@ -142,7 +208,7 @@ export function HeroSearch() {
 
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion);
-    handleSelect(suggestion, selectedLocation);
+    handleSearch(suggestion);
   };
 
   const scrollToServicesSection = () => {
@@ -246,6 +312,51 @@ export function HeroSearch() {
               Search
             </button>
           </div>
+        </div>
+
+        {/* Search Results Section */}
+        <div className="mt-8 w-full max-w-4xl">
+          {/* Requirement 3: Show loading while fetching */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+              <p className="mt-2 text-sm text-gray-500">Searching for best care providers...</p>
+            </div>
+          )}
+
+          {/* Requirement 6: Show error message */}
+          {error && !loading && (
+            <div className="rounded-lg bg-red-50 p-4 text-center text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {/* Requirement 5: Handle empty state */}
+          {!loading && !error && searchQuery && providers.length === 0 && providers !== null && (
+            <div className="rounded-lg bg-gray-50 py-10 text-center">
+              <p className="text-gray-600">No providers found for "{searchQuery}" in {selectedLocation}.</p>
+              <p className="mt-1 text-sm text-gray-400">Try searching for "nurse", "elder care", or "physio".</p>
+            </div>
+          )}
+
+          {/* Requirement 4: Display results */}
+          {providers.length > 0 && !loading && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {providers.map((provider, index) => (
+                <ProviderCard
+                  key={provider.id || index}
+                  id={provider.id}
+                  name={provider.name}
+                  qualification={provider.qualification || 'Certified Professional'}
+                  category={provider.category || 'Home Care'}
+                  experience={provider.experience || 5}
+                  base_price={provider.base_price || 500}
+                  distance_km={provider.distance_km || 2.5}
+                  onBook={(id) => router.push(`/booking?providerId=${id}`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">

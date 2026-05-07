@@ -26,6 +26,7 @@ const navLinks = [
 export const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const pathname = usePathname();
 
   const handleBookNowClick = () => {
@@ -39,7 +40,19 @@ export const Header = () => {
 
   useEffect(() => {
     setMounted(true);
+    const checkLogin = () => {
+      setIsLoggedIn(!!localStorage.getItem('token'));
+    };
+    checkLogin();
+    window.addEventListener('storage', checkLogin);
+    return () => window.removeEventListener('storage', checkLogin);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    window.location.href = '/';
+  };
 
   const isActivePath = (href: string) => {
     if (!pathname) return false;
@@ -108,6 +121,20 @@ export const Header = () => {
                         </Link>
                       ))}
 
+                      {isLoggedIn && (
+                        <Link
+                          href="/my-bookings"
+                          className={`px-4 py-3 text-base font-semibold rounded-lg transition-all ${
+                            isActivePath("/my-bookings")
+                              ? "text-emerald-600 bg-emerald-50"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          My Bookings
+                        </Link>
+                      )}
+
                       {/* Back to main site */}
                       <a
                         href={MAIN_SITE_URL}
@@ -117,19 +144,35 @@ export const Header = () => {
                         ← Back to SevaLink
                       </a>
 
-                      <div className="mt-6 pt-6 border-t border-gray-200 flex flex-col gap-3">
-                        <button
-                          type="button"
-                          className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-emerald-600 !text-white visited:!text-white hover:!text-white active:!text-white text-base font-semibold hover:bg-emerald-700 hover:shadow-lg transition-all text-center cursor-pointer border-none"
-                          onClick={() => {
-                            setMobileOpen(false);
-                            handleBookNowClick();
-                          }}
-                        >
-                          <HousePlus className="w-5 h-5" />
-                          Book Home Care
-                        </button>
-                      </div>
+                        <div className="mt-6 pt-6 border-t border-gray-200 flex flex-col gap-3">
+                          {isLoggedIn ? (
+                            <button
+                              onClick={handleLogout}
+                              className="px-4 py-3 text-base font-semibold text-red-600 bg-red-50 rounded-lg"
+                            >
+                              Logout
+                            </button>
+                          ) : (
+                            <Link
+                              href="/login"
+                              className="px-4 py-3 text-base font-semibold text-emerald-600 bg-emerald-50 rounded-lg text-center"
+                              onClick={() => setMobileOpen(false)}
+                            >
+                              Patient Login
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-emerald-600 !text-white visited:!text-white hover:!text-white active:!text-white text-base font-semibold hover:bg-emerald-700 hover:shadow-lg transition-all text-center cursor-pointer border-none"
+                            onClick={() => {
+                              setMobileOpen(false);
+                              handleBookNowClick();
+                            }}
+                          >
+                            <HousePlus className="w-5 h-5" />
+                            Book Home Care
+                          </button>
+                        </div>
                     </nav>
                   </div>
                 </SheetContent>
@@ -150,6 +193,16 @@ export const Header = () => {
                 {link.label}
               </Link>
             ))}
+            {isLoggedIn && (
+              <Link
+                href="/my-bookings"
+                className={`px-4 py-2 text-sm font-semibold transition-colors relative group ${
+                  isActivePath("/my-bookings") ? "text-emerald-600" : "text-gray-700 hover:text-emerald-600"
+                }`}
+              >
+                My Bookings
+              </Link>
+            )}
             {/* Back to main site link */}
             <a
               href={MAIN_SITE_URL}
@@ -159,8 +212,22 @@ export const Header = () => {
             </a>
           </nav>
 
-          {/* CTA - Desktop */}
-          <div className="hidden md:flex items-center gap-2 md:shrink-0 pr-2">
+          <div className="hidden md:flex items-center gap-4 md:shrink-0 pr-2">
+            {isLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="text-sm font-semibold text-gray-500 hover:text-red-600 transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-gray-700 hover:text-emerald-600 transition"
+              >
+                Login
+              </Link>
+            )}
             <button
               type="button"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 !text-white visited:!text-white hover:!text-white active:!text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl cursor-pointer border-none"
